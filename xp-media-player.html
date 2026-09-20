@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Windows Media Player</title>
+<style>
+*{box-sizing:border-box}
+html{height:100%;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+body{
+  margin:0;min-height:100%;display:flex;justify-content:center;align-items:flex-start;padding:10px 6px 28px;
+  font:12px Tahoma,"Segoe UI",Verdana,sans-serif;color:#000;
+  background:
+    radial-gradient(130% 55% at 25% 112%,#5fa834 0 58%,transparent 59%),
+    radial-gradient(120% 45% at 95% 115%,#3f8a22 0 58%,transparent 59%),
+    linear-gradient(#2a68cc,#78aeee 62%,#cfe4fb);
+  background-attachment:fixed;
+}
+
+/* ---------- window + skins ---------- */
+#win{
+  --c1:#8494dc;--c2:#4b5db6;--c3:#37489f;
+  --navtx:#fff;--navsel:rgba(255,255,255,.2);--navline:rgba(255,255,255,.3);
+  --side:#050505;--sidetx:#e6e6e6;--sidehl:#2d2d2d;--cur:#5cf05c;--sidebd:#3a3a3a;
+  --stg:#3dff3d;--trk1:#6f79ad;--trk2:#cfd6f3;--trkb:#26327a;--fill:#a8c0ff;
+  --btn1:#eef3ff;--btn2:#8ea6ea;--btn3:#3d56c2;--btnink:#0d1a63;
+  width:100%;max-width:720px;margin:0 auto;background:#0b5bea;padding:0 3px 3px;
+  border-radius:9px 9px 0 0;box-shadow:0 12px 34px rgba(0,0,0,.55);display:flex;flex-direction:column;
+}
+#win[data-skin=wmp9]{
+  --c1:#b9c8ec;--c2:#a3b6e5;--c3:#8ea4dc;
+  --navtx:#0d1b52;--navsel:rgba(255,255,255,.75);--navline:rgba(13,27,82,.18);
+  --side:#3b4a8a;--sidetx:#e8edff;--sidehl:#5a6cae;--cur:#fff;--sidebd:#2b386f;
+  --stg:#9dffa2;--trk1:#6d7fb9;--trk2:#e6ecfb;--trkb:#33448d;--fill:#5f86ea;
+  --btn1:#ffffff;--btn2:#b8c9f3;--btn3:#6d88d8;--btnink:#12276f;
+}
+.title{
+  height:30px;margin:0 -3px;padding:0 5px 0 8px;display:flex;align-items:center;gap:6px;color:#fff;font-weight:700;font-size:13px;
+  text-shadow:1px 1px #0f1089;border-radius:9px 9px 0 0;
+  background:linear-gradient(#0997ff 0,#0053ee 9%,#0050ee 42%,#0066ff 88%,#0066ff 93%,#005bff 95%,#003dd7 96%,#003dd7);
+}
+.title svg{width:16px;height:16px;flex:none}
+.title .sp{flex:1}
+.tb{width:21px;height:21px;padding:0;border:1px solid #fff;border-radius:3px;color:#fff;font:700 12px/1 Arial,sans-serif;
+  background:linear-gradient(135deg,#6a97f8,#2359da);cursor:pointer;text-shadow:none}
+.tb.x{background:linear-gradient(135deg,#eb937a,#c23a1c)}
+.tb:active{filter:brightness(.85)}
+
+.menubar{display:flex;background:#ece9d8;border-bottom:1px solid #aca899;position:relative;z-index:20;margin:0}
+.mi{padding:3px 9px;position:relative;cursor:default;user-select:none}
+.mi:hover,.mi.open{background:#316ac5;color:#fff}
+.dd{position:absolute;top:100%;left:0;min-width:210px;background:#fff;color:#000;border:1px solid #808080;box-shadow:2px 3px 5px rgba(0,0,0,.35);padding:2px;z-index:40}
+.dd button{display:flex;width:100%;text-align:left;background:none;border:0;padding:4px 10px 4px 2px;font:inherit;color:#000;cursor:default}
+.dd button:hover{background:#316ac5;color:#fff}
+.dd i{width:20px;flex:none;font-style:normal;text-align:center}
+.dd hr{border:0;border-top:1px solid #aca899;margin:3px 2px}
+
+.addr{display:flex;gap:6px;align-items:center;padding:4px 6px;background:#ece9d8;border-bottom:1px solid #aca899}
+.addr label{color:#404040}
+.addr input{flex:1;min-width:0;height:22px;padding:0 5px;border:1px solid #7f9db9;background:#fff;font:13px Tahoma,sans-serif;color:#000;outline:none}
+.addr input:focus{border-color:#316ac5;box-shadow:0 0 0 1px #316ac5 inset}
+.go{height:22px;padding:0 14px;border:1px solid #003c74;border-radius:3px;background:linear-gradient(#fff,#ece9d8 85%,#d6d0c5);font:12px Tahoma,sans-serif;cursor:pointer;color:#000}
+.go:active{background:linear-gradient(#d6d0c5,#ece9d8)}
+
+.main{display:grid;grid-template-columns:102px 1fr;background:linear-gradient(90deg,var(--c1),var(--c2) 45%,var(--c3))}
+#win.min .main{display:none}
+
+/* nav */
+.nav{display:flex;flex-direction:column;padding:14px 0 8px}
+.nv{display:block;width:100%;text-align:left;padding:9px 6px 9px 12px;border:0;border-bottom:1px solid var(--navline);background:none;color:var(--navtx);
+  font:700 12px/1.15 Tahoma,sans-serif;cursor:pointer}
+.nv.sel{background:var(--navsel)}
+.nv:hover{background:var(--navsel)}
+.logo{margin-top:auto;padding:14px 10px 4px;color:var(--navtx);font:italic 700 10px/1.1 "Trebuchet MS",Tahoma,sans-serif;display:flex;flex-direction:column;gap:3px}
+.logo svg{width:34px;height:34px}
+
+/* content */
+.col{display:flex;flex-direction:column;min-width:0;padding:8px 8px 0 0}
+.content{position:relative;background:#000;border:1px solid #000}
+.now{display:grid;grid-template-columns:1fr 212px;height:300px}
+.viz{position:relative;background:#000;overflow:hidden;min-width:0}
+.viz iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000;pointer-events:none}
+#win[data-mode=video] .viz iframe{pointer-events:auto}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:1}
+#win[data-mode=video] #cv,#win[data-mode=video] .np{display:none}
+.np{position:absolute;left:0;right:0;top:0;z-index:2;padding:7px 10px 26px;pointer-events:none;background:linear-gradient(rgba(0,0,0,.62),rgba(0,0,0,0));text-shadow:0 1px 3px #000}
+.np .a{font:15px Arial,Helvetica,sans-serif;color:#dcdcdc}
+.np .t{font:19px Arial,Helvetica,sans-serif;color:#fff;margin-top:1px;overflow-wrap:anywhere}
+
+.side{display:flex;flex-direction:column;background:var(--side);border-left:2px solid var(--sidebd);min-width:0;min-height:0}
+.plh{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:3px 6px;background:linear-gradient(#fbfcff,#dfe6fa);color:#000;border-bottom:1px solid #7f8bb5;font-size:12px}
+.plh span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plh b{width:16px;height:16px;flex:none;border:1px solid #6d7bb0;border-radius:2px;background:linear-gradient(#f4f7ff,#b7c5ee);display:grid;place-items:center;font-size:9px;color:#1c2b73}
+.list{flex:1;overflow:auto;position:relative;color:var(--sidetx);min-height:0}
+.row{display:flex;gap:6px;padding:3px 6px;cursor:default}
+.row:hover{background:rgba(255,255,255,.09)}
+.row.cur{color:var(--cur);background:var(--sidehl)}
+.row .pl{width:10px;flex:none;color:#cfcfcf}
+.row .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row.empty{color:#9a9a9a;font-style:italic}
+.trk{display:flex;gap:8px;align-items:center;padding:8px;border-top:1px solid var(--sidebd);color:var(--sidetx)}
+.art{position:relative;width:62px;height:62px;flex:none;background:#151b3a center/cover no-repeat;border:1px solid #6a739f;display:grid;place-items:center;color:#8f9be0;font-size:28px}
+.art.has::before{display:none}
+.art::before{content:"\266A"}
+.trk .i{min-width:0;font-size:11px;line-height:1.3}
+.trk .i b{display:block;color:#fff;font-size:12px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.trk .i span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.other{position:absolute;inset:0;display:none;background:#fff;color:#111;overflow:auto;padding:14px 18px;z-index:6;font:13px/1.5 Verdana,Tahoma,sans-serif}
+.other h2{margin:0 0 8px;color:#1c3f94;font:700 20px "Trebuchet MS",Tahoma,sans-serif}
+.other ol{padding-left:20px;margin:6px 0}
+.other .lib button{display:block;width:100%;text-align:left;padding:6px 8px;margin:0;border:0;border-bottom:1px solid #e3e6f2;background:none;font:inherit;color:#1a3ea6;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.other .lib button:hover{background:#eef2ff}
+.other p{margin:6px 0}
+.other kbd{border:1px solid #aaa;border-bottom-width:2px;border-radius:3px;padding:0 4px;background:#f6f6f6;font:11px Verdana}
+
+.status{display:flex;justify-content:space-between;gap:10px;padding:3px 10px;background:#000;border:1px solid #000;border-top:1px solid #262626;color:var(--stg);font:700 12px Verdana,Tahoma,sans-serif}
+.status #st{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.status #st.bad{color:#ff8f78}
+.status #tm{white-space:nowrap}
+
+/* controls */
+.controls{padding:6px 2px 10px}
+input[type=range]{-webkit-appearance:none;appearance:none;background:transparent;height:20px;margin:0;cursor:pointer;--p:0%}
+input[type=range]:focus-visible{outline:2px solid #fff;outline-offset:2px}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;border:1px solid var(--trkb);
+  background:linear-gradient(var(--fill),var(--fill)) 0/var(--p) 100% no-repeat,linear-gradient(var(--trk1),var(--trk2))}
+input[type=range]::-moz-range-track{height:4px;border-radius:3px;border:1px solid var(--trkb);
+  background:linear-gradient(var(--fill),var(--fill)) 0/var(--p) 100% no-repeat,linear-gradient(var(--trk1),var(--trk2))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:18px;margin-top:-7px;border-radius:3px;border:1px solid #1d2b78;background:linear-gradient(#fff,#b9c7f3 50%,#7286d6)}
+input[type=range]::-moz-range-thumb{box-sizing:border-box;width:12px;height:18px;border-radius:3px;border:1px solid #1d2b78;background:linear-gradient(#fff,#b9c7f3 50%,#7286d6)}
+#seek{width:100%;display:block}
+.btnrow{display:flex;align-items:center;gap:8px;margin-top:6px}
+.cb{width:28px;height:28px;flex:none;padding:0;border-radius:50%;border:1px solid rgba(255,255,255,.85);cursor:pointer;color:var(--btnink);
+  background:radial-gradient(circle at 35% 25%,var(--btn1),var(--btn2) 48%,var(--btn3));box-shadow:0 1px 3px rgba(0,0,0,.5),inset 0 -2px 4px rgba(0,0,0,.18);display:grid;place-items:center}
+.cb svg{width:15px;height:15px;fill:currentColor;display:block}
+.cb:active{filter:brightness(.84)}
+.cb:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.cb.play{width:48px;height:48px}
+.cb.play svg{width:26px;height:26px}
+.cb.pn{width:34px;border-radius:10px}
+.cb.on{box-shadow:0 0 0 2px #7dff7d,0 1px 3px rgba(0,0,0,.5)}
+#vol{width:96px;flex:0 1 96px;min-width:50px}
+.grow{flex:1}
+
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+.dlg{width:100%;max-width:360px;background:#ece9d8;border:3px solid #0b5bea;border-top:0;border-radius:8px 8px 0 0;box-shadow:0 8px 28px rgba(0,0,0,.5)}
+.dlg .dt{display:flex;align-items:center;justify-content:space-between;height:28px;padding:0 4px 0 8px;color:#fff;font-weight:700;margin:0 -3px;border-radius:8px 8px 0 0;
+  background:linear-gradient(#0997ff,#0053ee 9%,#0050ee 42%,#0066ff 88%,#003dd7)}
+.dlg .db{padding:14px;font-size:12px;line-height:1.5}
+.dlg .df{padding:0 14px 14px;text-align:right}
+.dlg .df button{min-width:74px;height:24px}
+
+@media (max-width:640px){
+  body{padding:6px 4px 24px}
+  .main{grid-template-columns:1fr}
+  .nav{flex-direction:row;overflow-x:auto;padding:0;border-bottom:1px solid var(--navline)}
+  .nv{width:auto;white-space:nowrap;border-bottom:0;border-right:1px solid var(--navline);padding:9px 12px}
+  .logo{display:none}
+  .col{padding:6px}
+  .now{grid-template-columns:1fr;grid-template-rows:238px 200px;height:auto}
+  .side{border-left:0;border-top:2px solid var(--sidebd)}
+  .addr input{font-size:16px;height:26px}
+  .addr label{display:none}
+  .go{height:26px}
+  #vol{width:72px;flex-basis:72px}
+  .btnrow{gap:6px}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></symbol>
+  <symbol id="i-prev" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></symbol>
+  <symbol id="i-vol" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></symbol>
+  <symbol id="i-mute" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></symbol>
+  <symbol id="i-shuf" viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></symbol>
+  <symbol id="i-rep" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></symbol>
+</svg>
+
+<div id="win" data-skin="wmp8" data-mode="kal">
+  <div class="title">
+    <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="#f7931e" stroke="#fff" stroke-width="1"/><path d="M6 4.2l5.6 3.8L6 11.8z" fill="#fff"/></svg>
+    <span>Windows Media Player</span><span class="sp"></span>
+    <button class="tb" id="tMin" aria-label="Minimize" title="Minimize">&#x2013;</button>
+    <button class="tb" id="tMax" aria-label="Full screen" title="Full screen">&#x25A1;</button>
+    <button class="tb x" id="tClose" aria-label="Close" title="Close">&#x2715;</button>
+  </div>
+  <div class="menubar" id="menubar"></div>
+  <form class="addr" id="addrForm" autocomplete="off">
+    <label for="addr">Address</label>
+    <input id="addr" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Paste a YouTube song or playlist link">
+    <button class="go" type="submit">Go</button>
+  </form>
+
+  <div class="main">
+    <nav class="nav" id="nav" aria-label="Media Player navigation">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 32 32"><path d="M3 6c4-2 7-2 11 0v9c-4-2-7-2-11 0z" fill="#f25022"/><path d="M16 7c4 2 8 2 12 0v9c-4 2-8 2-12 0z" fill="#7fba00"/><path d="M3 17c4-2 7-2 11 0v9c-4-2-7-2-11 0z" fill="#00a4ef"/><path d="M16 18c4 2 8 2 12 0v9c-4 2-8 2-12 0z" fill="#ffb900"/></svg>
+        <span>Windows<br>Media Player</span>
+      </div>
+    </nav>
+
+    <div class="col">
+      <div class="content">
+        <div class="now">
+          <div class="viz" id="viz">
+            <canvas id="cv"></canvas>
+            <div class="np"><div class="a" id="npA"></div><div class="t" id="npT"></div></div>
+          </div>
+          <aside class="side">
+            <div class="plh"><span id="plTitle">Now Playing</span><b>&#x25BE;</b></div>
+            <div class="list" id="plist"></div>
+            <div class="trk">
+              <div class="art" id="art"></div>
+              <div class="i"><b id="trkT">No media</b><span id="trkA"></span></div>
+            </div>
+          </aside>
+        </div>
+        <div class="other" id="other"></div>
+      </div>
+
+      <div class="status"><span id="st">Ready</span><span id="tm">00:00</span></div>
+
+      <div class="controls">
+        <input id="seek" type="range" min="0" max="1000" value="0" step="1" aria-label="Seek">
+        <div class="btnrow">
+          <button class="cb play" id="bPlay" title="Play" aria-label="Play"><svg><use href="#i-play"/></svg></button>
+          <button class="cb" id="bStop" title="Stop" aria-label="Stop"><svg><use href="#i-stop"/></svg></button>
+          <button class="cb pn" id="bPrev" title="Previous" aria-label="Previous"><svg><use href="#i-prev"/></svg></button>
+          <button class="cb pn" id="bNext" title="Next" aria-label="Next"><svg><use href="#i-next"/></svg></button>
+          <button class="cb" id="bMute" title="Mute" aria-label="Mute"><svg><use href="#i-vol"/></svg></button>
+          <input id="vol" type="range" min="0" max="100" value="80" aria-label="Volume">
+          <span class="grow"></span>
+          <button class="cb" id="bShuf" title="Shuffle" aria-label="Shuffle"><svg><use href="#i-shuf"/></svg></button>
+          <button class="cb" id="bRep" title="Repeat" aria-label="Repeat"><svg><use href="#i-rep"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true">
+  <div class="dlg">
+    <div class="dt"><span id="dtitle"></span><button class="tb x" id="dx" aria-label="Close">&#x2715;</button></div>
+    <div class="db" id="dbody"></div>
+    <div class="df"><button class="go" id="dok">OK</button></div>
+  </div>
+</div>
+
+<script>
+(()=>{
+'use strict';
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const win=$('#win'),viz=$('#viz'),cv=$('#cv'),g=cv.getContext('2d');
+const addr=$('#addr'),seek=$('#seek'),vol=$('#vol'),st=$('#st'),tm=$('#tm');
+const npA=$('#npA'),npT=$('#npT'),artEl=$('#art'),trkT=$('#trkT'),trkA=$('#trkA'),plist=$('#plist'),plTitle=$('#plTitle');
+
+/* ---------- storage ---------- */
+const store={
+  get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+const prefs=Object.assign({mode:'kal',skin:'wmp8',vol:80},store.get('wmp.prefs',{}));
+const savePrefs=()=>store.set('wmp.prefs',prefs);
+
+/* ---------- state ---------- */
+const S={
+  tracks:[],index:-1,curId:null,isList:false,loaded:false,ready:false,
+  ps:-1,playing:false,stopped:false,err:null,
+  dur:0,cur:0,curAt:0,shuffle:false,repeat:false,muted:false,volume:prefs.vol,
+  mode:prefs.mode,skin:prefs.skin,hue:210,libKey:null,errCount:0,artId:null
+};
+const meta={}; // video id -> {artist,title}
+
+/* ---------- helpers ---------- */
+const fmt=s=>{s=Math.max(0,Math.floor(s||0));const h=Math.floor(s/3600),m=Math.floor(s%3600/60),c=s%60;
+  return (h?h+':'+String(m).padStart(2,'0'):String(m).padStart(2,'0'))+':'+String(c).padStart(2,'0')};
+const hash=s=>{let h=2166136261;s=String(s);for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0};
+function setStatus(t,bad){st.textContent=t;st.classList.toggle('bad',!!bad)}
+function tidy(title,author){
+  let a=(author||'').replace(/\s*-\s*Topic$/i,'').replace(/VEVO$/i,'').trim();
+  let t=(title||'').replace(/\s*[\(\[]\s*(?:official|lyric|lyrics|audio|video|music video|hd|hq|4k|visuali[sz]er|full song|full video|remaster(?:ed)?)[^\)\]]*[\)\]]/gi,'').trim();
+  const m=t.match(/^(.+?)\s+[-\u2013\u2014]\s+(.+)$/);
+  if(m) return {artist:m[1].trim(),title:m[2].trim()};
+  return {artist:a||'Unknown Artist',title:t||'Untitled'};
+}
+function parseInput(raw){
+  raw=(raw||'').trim(); if(!raw) return null;
+  if(/^[\w-]{11}$/.test(raw)) return {vid:raw,list:null};
+  if(/^(PL|OL|UU|FL|RD|LL)[\w-]{10,}$/.test(raw)) return {vid:null,list:raw};
+  let u; try{u=new URL(/^[a-z]+:\/\//i.test(raw)?raw:'https://'+raw)}catch(e){return null}
+  const h=u.hostname.replace(/^www\./,'');
+  let vid=null; const list=u.searchParams.get('list');
+  if(h==='youtu.be') vid=u.pathname.split('/')[1]||null;
+  else if(/(^|\.)youtube(-nocookie)?\.com$/.test(h)){
+    vid=u.searchParams.get('v');
+    const m=u.pathname.match(/^\/(?:embed|shorts|live|v)\/([\w-]{11})/); if(!vid&&m) vid=m[1];
+  } else return null;
+  if(vid&&!/^[\w-]{11}$/.test(vid)) vid=null;
+  if(!vid&&!list) return null;
+  let l=list; if(l&&/^RD/.test(l)&&vid) l=null; // mixes can't be embedded
+  return {vid,list:l};
+}
+
+/* ---------- YouTube iframe bridge (postMessage, no external script) ---------- */
+let ytf=null,hs=null,readyTimer=null;
+function send(o){try{ytf&&ytf.contentWindow&&ytf.contentWindow.postMessage(JSON.stringify(o),'*')}catch(e){}}
+function cmd(func,args){send({event:'command',func,args:args||[],id:1,channel:'widget'})}
+
+function mountFrame(src){
+  if(ytf) ytf.remove();
+  clearInterval(hs); clearTimeout(readyTimer);
+  ytf=document.createElement('iframe');
+  ytf.allow='autoplay; encrypted-media; picture-in-picture';
+  ytf.setAttribute('referrerpolicy','strict-origin-when-cross-origin');
+  ytf.title='YouTube player';
+  ytf.addEventListener('load',()=>{
+    clearInterval(hs); let n=0;
+    hs=setInterval(()=>{ if(S.ready||++n>60){clearInterval(hs);return} send({event:'listening',id:1,channel:'widget'}) },250);
+  });
+  ytf.src=src;
+  viz.prepend(ytf);
+  readyTimer=setTimeout(()=>{
+    if(!S.ready) setStatus(location.protocol==='file:'?'YouTube blocks file:// pages - host this file over https':'Cannot reach YouTube player',true);
+  },7000);
+}
+
+window.addEventListener('message',e=>{
+  if(!ytf||e.source!==ytf.contentWindow) return;
+  let d=e.data; if(typeof d==='string'){try{d=JSON.parse(d)}catch(_){return}}
+  if(!d||typeof d!=='object') return;
+  if(!S.ready){S.ready=true; cmd('setVolume',[S.volume]); if(S.repeat&&S.isList)cmd('setLoop',[true]); if(S.shuffle&&S.isList)cmd('setShuffle',[true]);}
+  switch(d.event){
+    case 'initialDelivery': case 'infoDelivery': info(d.info); break;
+    case 'onStateChange': if(typeof d.info==='number') setPState(d.info); break;
+    case 'onError': onErr(d.info); break;
+  }
+});
+
+function info(i){
+  if(!i||typeof i!=='object') return;
+  if(typeof i.duration==='number'&&i.duration>0) S.dur=i.duration;
+  if(typeof i.currentTime==='number'){S.cur=i.currentTime;S.curAt=performance.now()}
+  if(i.videoData) videoData(i.videoData);
+  if(Array.isArray(i.playlist)&&i.playlist.length) setList(i.playlist);
+  if(typeof i.playlistIndex==='number'&&i.playlistIndex>=0) setIndex(i.playlistIndex);
+  if(typeof i.playerState==='number') setPState(i.playerState);
+}
+function setPState(s){
+  S.ps=s; S.playing=(s===1);
+  if(s===1){S.stopped=false;S.err=null;S.errCount=0}
+  if(s===0&&S.repeat&&!S.isList){cmd('seekTo',[0,true]);cmd('playVideo')}
+  updateUI();
+}
+function updateUI(){
+  $('#bPlay use').setAttribute('href',S.playing?'#i-pause':'#i-play');
+  $('#bPlay').title=$('#bPlay').ariaLabel=S.playing?'Pause':'Play';
+  if(S.err) return setStatus(S.err,true);
+  if(!S.loaded) return setStatus('Ready');
+  if(S.ps===3) setStatus('Buffering\u2026');
+  else if(S.playing) setStatus('Playing');
+  else if(S.stopped) setStatus('Stopped');
+  else if(S.ps===2) setStatus('Paused');
+  else setStatus('Ready');
+}
+const ERR={2:'The link is not valid.',5:'The player could not play this media.',100:'Media not found - removed or private.',101:'The owner blocked playback outside YouTube.',150:'The owner blocked playback outside YouTube.',153:'YouTube rejected the request - host this file over https.'};
+function onErr(code){
+  S.err=ERR[code]||'Windows Media Player cannot play this file.'; S.playing=false; updateUI();
+  if(S.isList&&++S.errCount<Math.max(2,S.tracks.length)) setTimeout(()=>{S.err=null;cmd('nextVideo')},1600);
+}
+
+/* ---------- tracks / playlist ---------- */
+function videoData(v){
+  const id=v.video_id; if(!id) return;
+  if(v.title) meta[id]=tidy(v.title,v.author);
+  if(id!==S.curId){
+    S.curId=id;
+    let i=S.tracks.findIndex(t=>t.id===id);
+    if(i<0&&!S.isList){S.tracks.push({id});i=S.tracks.length-1}
+    if(i>=0) S.index=i;
+    setArt(id); S.dur=0;
+  }
+  renderList(); showNP(); libLabel();
+}
+function setList(ids){
+  if(ids.join()===S.tracks.map(t=>t.id).join()) return;
+  S.tracks=ids.map(id=>({id}));
+  if(S.curId){const i=S.tracks.findIndex(t=>t.id===S.curId); if(i>=0) S.index=i}
+  ids.forEach(want); renderList(); showNP();
+}
+function setIndex(i){
+  if(!S.tracks[i]||i===S.index) return;
+  S.index=i; S.curId=S.tracks[i].id; setArt(S.curId); renderList(); showNP();
+}
+
+/* metadata fetch (titles for the playlist) */
+const pending=new Set(),queue=[];let active=0;
+function want(id){ if(meta[id]||pending.has(id)) return; pending.add(id); queue.push(id); pump() }
+function pump(){ while(active<3&&queue.length){const id=queue.shift();active++;fetchMeta(id).finally(()=>{active--;pump()})} }
+async function fetchMeta(id){
+  const wu='https://www.youtube.com/watch?v='+id;
+  for(const ep of ['https://www.youtube.com/oembed?format=json&url=','https://noembed.com/embed?url=']){
+    try{
+      const r=await fetch(ep+encodeURIComponent(wu)); if(!r.ok) continue;
+      const j=await r.json();
+      if(j&&j.title&&!meta[id]){meta[id]=tidy(j.title,j.author_name); renderList(); if(id===S.curId)showNP(); libLabel(); return}
+    }catch(e){}
+  }
+}
+
+let rt=0,lastScrolled=-2;
+function renderList(){clearTimeout(rt);rt=setTimeout(doRender,40)}
+function doRender(){
+  plist.textContent='';
+  plTitle.textContent=S.isList?'Playlist ('+S.tracks.length+')':'Now Playing';
+  if(!S.tracks.length){
+    const r=document.createElement('div'); r.className='row empty';
+    r.textContent=S.loaded?'Opening playlist\u2026':'Playlist is empty'; plist.appendChild(r); return;
+  }
+  const frag=document.createDocumentFragment();
+  S.tracks.forEach((t,i)=>{
+    const m=meta[t.id]; const r=document.createElement('div');
+    r.className='row'+(i===S.index?' cur':''); r.dataset.i=i;
+    const p=document.createElement('span'); p.className='pl'; p.textContent='+';
+    const n=document.createElement('span'); n.className='nm'; n.textContent=m?m.artist+' \u2013 '+m.title:'Track '+(i+1);
+    r.append(p,n); frag.appendChild(r);
+  });
+  plist.appendChild(frag);
+  if(S.index!==lastScrolled){
+    const c=plist.querySelector('.cur');
+    if(c){plist.scrollTop=Math.max(0,c.offsetTop-plist.clientHeight/2+10); lastScrolled=S.index}
+  }
+}
+plist.addEventListener('click',e=>{
+  const r=e.target.closest('.row'); if(!r||r.classList.contains('empty')) return;
+  const i=+r.dataset.i;
+  if(S.isList) cmd('playVideoAt',[i]); else if(i===S.index) togglePlay();
+});
+
+/* ---------- now playing text + art ---------- */
+function showNP(){
+  const t=S.tracks[S.index]; const m=t&&meta[t.id];
+  let a,ti;
+  if(!S.loaded){a='YouTube Edition';ti='Paste a link to begin'}
+  else if(m){a=m.artist;ti=m.title}
+  else{a='Windows Media Player';ti='Connecting to media\u2026'}
+  npA.textContent=a; npT.textContent=ti;
+  trkT.textContent=S.loaded?(m?m.title:'Loading\u2026'):'No media';
+  trkA.textContent=S.loaded&&m?m.artist:'';
+  document.title=m?m.title+' - '+m.artist+' - Windows Media Player':'Windows Media Player';
+  if('mediaSession' in navigator&&m&&S.curId){
+    try{navigator.mediaSession.metadata=new MediaMetadata({title:m.title,artist:m.artist,artwork:[{src:'https://i.ytimg.com/vi/'+S.curId+'/mqdefault.jpg',sizes:'320x180',type:'image/jpeg'}]})}catch(e){}
+  }
+}
+const src=document.createElement('canvas'); src.width=src.height=360; const sx=src.getContext('2d');
+function paintFallback(seed){
+  const h0=hash(seed||'wmp')%360; S.hue=h0;
+  sx.globalCompositeOperation='source-over'; sx.fillStyle='#050510'; sx.fillRect(0,0,360,360);
+  for(let i=0;i<16;i++){
+    const hh=(h0+i*41)%360,x=hash(seed+'x'+i)%360,y=hash(seed+'y'+i)%360,r=50+hash(seed+'r'+i)%110;
+    const gr=sx.createRadialGradient(x,y,0,x,y,r);
+    gr.addColorStop(0,'hsla('+hh+',90%,58%,.95)'); gr.addColorStop(1,'hsla('+hh+',90%,40%,0)');
+    sx.fillStyle=gr; sx.fillRect(0,0,360,360);
+  }
+}
+function paintArt(img,hq){
+  const w=img.naturalWidth,h=img.naturalHeight;
+  let cy=0,ch=h; if(hq){cy=Math.round(h*.125);ch=h-2*cy}
+  const s=Math.min(w,ch);
+  sx.globalCompositeOperation='source-over';
+  sx.drawImage(img,(w-s)/2,cy+(ch-s)/2,s,s,0,0,360,360);
+}
+function setArt(id){
+  S.artId=id; paintFallback(id);
+  artEl.classList.add('has');
+  artEl.style.backgroundImage='url(https://i.ytimg.com/vi/'+id+'/mqdefault.jpg)';
+  const urls=[['maxresdefault',false],['hqdefault',true]];
+  const step=k=>{
+    if(k>=urls.length||S.artId!==id) return;
+    const im=new Image();
+    im.onload=()=>{ if(S.artId!==id) return; if(im.naturalWidth<200){step(k+1);return} paintArt(im,urls[k][1]) };
+    im.onerror=()=>step(k+1);
+    im.src='https://i.ytimg.com/vi/'+id+'/'+urls[k][0]+'.jpg';
+  };
+  step(0);
+}
+
+/* ---------- loading ---------- */
+function load(input){
+  input=(input||'').trim();
+  const p=parseInput(input);
+  if(!p){ S.err='That is not a YouTube song or playlist link.'; updateUI(); return }
+  showPane('now');
+  Object.assign(S,{err:null,tracks:[],index:-1,curId:null,loaded:true,ready:false,ps:-1,playing:false,stopped:false,dur:0,cur:0,errCount:0,isList:!!p.list,libKey:input});
+  lastScrolled=-2;
+  addLib(input);
+  if(p.vid){S.tracks=[{id:p.vid}];S.index=0;S.curId=p.vid;setArt(p.vid);want(p.vid)}
+  else{paintFallback(p.list)}
+  const q=new URLSearchParams({enablejsapi:'1',autoplay:'1',controls:'0',playsinline:'1',rel:'0',modestbranding:'1',iv_load_policy:'3',fs:'0',disablekb:'1'});
+  if(/^https?:$/.test(location.protocol)) q.set('origin',location.origin);
+  const base='https://www.youtube.com/embed/';
+  let src_;
+  if(p.list){ q.set('list',p.list); src_=base+(p.vid||'videoseries')+'?'+q }
+  else src_=base+p.vid+'?'+q;
+  mountFrame(src_);
+  setStatus('Opening media\u2026');
+  doRender(); showNP(); updateUI(); setStatus('Opening media\u2026');
+  addr.blur();
+}
+
+/* ---------- transport ---------- */
+function togglePlay(){
+  if(!S.loaded){addr.focus();return}
+  if(S.playing) cmd('pauseVideo'); else{S.stopped=false;cmd('playVideo')}
+}
+function stop(){ if(!S.loaded) return; cmd('pauseVideo'); cmd('seekTo',[0,true]); S.stopped=true; S.cur=0;S.curAt=performance.now(); S.playing=false; updateUI() }
+function prev(){ if(!S.loaded) return; if(S.cur>3||!S.isList){cmd('seekTo',[0,true]);S.cur=0;S.curAt=performance.now()} else cmd('previousVideo') }
+function next(){ if(!S.loaded) return; if(S.isList) cmd('nextVideo'); else setStatus('End of playlist') }
+function toggleShuffle(){
+  if(!S.isList){setStatus('Shuffle needs a playlist link');return}
+  S.shuffle=!S.shuffle; cmd('setShuffle',[S.shuffle]); $('#bShuf').classList.toggle('on',S.shuffle);
+}
+function toggleRepeat(){
+  S.repeat=!S.repeat; if(S.isList) cmd('setLoop',[S.repeat]); $('#bRep').classList.toggle('on',S.repeat);
+}
+function setVol(v,fromUI){
+  S.volume=v; vol.value=v; vol.style.setProperty('--p',v+'%');
+  cmd('setVolume',[v]); if(v>0&&S.muted){S.muted=false;cmd('unMute')}
+  if(fromUI){prefs.vol=v;savePrefs()}
+  $('#bMute use').setAttribute('href',(S.muted||v===0)?'#i-mute':'#i-vol');
+}
+function toggleMute(){
+  S.muted=!S.muted; cmd(S.muted?'mute':'unMute');
+  $('#bMute use').setAttribute('href',S.muted?'#i-mute':'#i-vol');
+}
+$('#bPlay').onclick=togglePlay; $('#bStop').onclick=stop; $('#bPrev').onclick=prev; $('#bNext').onclick=next;
+$('#bMute').onclick=toggleMute; $('#bShuf').onclick=toggleShuffle; $('#bRep').onclick=toggleRepeat;
+vol.addEventListener('input',()=>setVol(+vol.value,true));
+
+let dragging=false;
+seek.addEventListener('input',()=>{dragging=true;seek.style.setProperty('--p',seek.value/10+'%')});
+seek.addEventListener('change',()=>{
+  if(S.dur){const t=seek.value/1000*S.dur;cmd('seekTo',[t,true]);S.cur=t;S.curAt=performance.now()}
+  dragging=false;
+});
+
+/* ---------- address bar ---------- */
+$('#addrForm').addEventListener('submit',e=>{e.preventDefault(); if(!addr.value.trim()){addr.focus();return} load(addr.value)});
+addr.addEventListener('paste',()=>setTimeout(()=>{ if(parseInput(addr.value)) load(addr.value) },0));
+
+/* ---------- media library ---------- */
+const lib=()=>store.get('wmp.lib',[]);
+function addLib(link){ const l=lib().filter(x=>x.link!==link); l.unshift({link,label:link}); store.set('wmp.lib',l.slice(0,25)) }
+function libLabel(){
+  if(!S.libKey) return; const t=S.tracks[0],m=t&&meta[t.id]; if(!m) return;
+  const l=lib(),it=l.find(x=>x.link===S.libKey); if(!it) return;
+  const lab=(S.isList?'Playlist: ':'')+m.artist+' \u2013 '+m.title;
+  if(it.label!==lab){it.label=lab;store.set('wmp.lib',l)}
+}
+
+/* ---------- nav panes ---------- */
+const NAV=[['now','Now Playing'],['guide','Media Guide'],['cd','Copy from CD'],['lib','Media Library'],['radio','Radio Tuner'],['dev','Copy to CD or Device']];
+const nav=$('#nav'),logo=$('.logo');
+NAV.forEach(([id,label])=>{
+  const b=document.createElement('button'); b.type='button'; b.className='nv'; b.dataset.id=id; b.textContent=label;
+  b.onclick=()=>showPane(id); nav.insertBefore(b,logo);
+});
+function paneContent(id){
+  const d=document.createElement('div');
+  if(id==='guide'){
+    d.innerHTML='<h2>Media Guide</h2><ol><li>Paste a YouTube song or playlist link in <b>Address</b> and press <b>Go</b>.</li><li>Name and album art fill in by themselves.</li><li>Pick the visuals in <b>View</b>: Kaleidoscope, Colors, Album Art or Video.</li></ol><p>Keys: <kbd>Space</kbd> play/pause &nbsp; <kbd>\u2190</kbd><kbd>\u2192</kbd> seek &nbsp; <kbd>N</kbd>/<kbd>P</kbd> next/previous &nbsp; <kbd>\u2191</kbd><kbd>\u2193</kbd> volume</p><p>If nothing starts on your phone, open <b>View \u203A Video</b> and tap the video once.</p>';
+  }else if(id==='lib'){
+    d.innerHTML='<h2>Media Library</h2>'; const box=document.createElement('div'); box.className='lib';
+    const l=lib();
+    if(!l.length){const p=document.createElement('p');p.textContent='Nothing here yet. Links you play are saved on this device.';box.appendChild(p)}
+    l.forEach(x=>{const b=document.createElement('button');b.type='button';b.textContent=x.label;b.title=x.link;b.onclick=()=>{addr.value=x.link;load(x.link)};box.appendChild(b)});
+    d.appendChild(box);
+  }else if(id==='cd') d.innerHTML='<h2>Copy from CD</h2><p>No disc in drive D:.</p><p>Insert an audio CD, or paste a YouTube link in Address instead.</p>';
+  else if(id==='radio') d.innerHTML='<h2>Radio Tuner</h2><p>No stations available.</p><p>Tip: paste a YouTube live radio link in Address.</p>';
+  else d.innerHTML='<h2>Copy to CD or Device</h2><p>No portable device detected.</p>';
+  return d;
+}
+function showPane(id){
+  $$('.nv').forEach(b=>b.classList.toggle('sel',b.dataset.id===id));
+  const o=$('#other');
+  if(id==='now'){o.style.display='none';return}
+  o.textContent=''; o.appendChild(paneContent(id)); o.style.display='block';
+}
+
+/* ---------- modes + skins ---------- */
+const MODES=[['kal','Kaleidoscope'],['kal2','Kaleidoscope Colors'],['art','Album Art'],['video','Video']];
+function setMode(m){ S.mode=m; prefs.mode=m; savePrefs(); win.dataset.mode=m; g.setTransform(dpr,0,0,dpr,0,0); g.fillStyle='#000'; g.fillRect(0,0,W,H) }
+function setSkin(s){ S.skin=s; prefs.skin=s; savePrefs(); win.dataset.skin=s }
+function fullscreen(){
+  try{ if(document.fullscreenElement) document.exitFullscreen(); else (win.requestFullscreen||win.webkitRequestFullscreen).call(win) }catch(e){}
+}
+function clearAll(){
+  if(ytf){ytf.remove();ytf=null} clearInterval(hs);clearTimeout(readyTimer);
+  Object.assign(S,{tracks:[],index:-1,curId:null,loaded:false,ready:false,ps:-1,playing:false,stopped:false,err:null,dur:0,cur:0,isList:false,libKey:null});
+  paintFallback('wmp'); artEl.style.backgroundImage=''; artEl.classList.remove('has');
+  doRender(); showNP(); updateUI(); document.title='Windows Media Player';
+}
+function about(){
+  openModal('About Windows Media Player','<b>YouTube Edition</b><br>A fan-made tribute to the Windows XP-era player. Plays YouTube songs and playlists with live track info, album art and kaleidoscope visuals.<br><br>Not affiliated with Microsoft or Google.');
+}
+function openModal(t,h){ $('#dtitle').textContent=t; $('#dbody').innerHTML=h; $('#modal').style.display='flex'; $('#dok').focus() }
+function closeModal(){ $('#modal').style.display='none' }
+$('#dok').onclick=closeModal; $('#dx').onclick=closeModal;
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()});
+
+const MENUS={
+  File:()=>[
+    {label:'Open URL\u2026',run:()=>{showPane('now');addr.focus();addr.select()}},
+    {label:'Paste link from clipboard',run:pasteGo},
+    '-',
+    {label:'Close',run:clearAll}
+  ],
+  View:()=>[
+    ...MODES.map(([id,l])=>({label:l,on:S.mode===id,run:()=>setMode(id)})),
+    '-',
+    {label:'Media Player 8 skin',on:S.skin==='wmp8',run:()=>setSkin('wmp8')},
+    {label:'Media Player 9 skin',on:S.skin==='wmp9',run:()=>setSkin('wmp9')},
+    '-',
+    {label:'Full Screen',run:fullscreen}
+  ],
+  Play:()=>[
+    {label:S.playing?'Pause':'Play',run:togglePlay},
+    {label:'Stop',run:stop},
+    {label:'Previous',run:prev},
+    {label:'Next',run:next},
+    '-',
+    {label:'Shuffle',on:S.shuffle,run:toggleShuffle},
+    {label:'Repeat',on:S.repeat,run:toggleRepeat}
+  ],
+  Tools:()=>[{label:'Clear Media Library',run:()=>{store.set('wmp.lib',[]);setStatus('Media Library cleared')}}],
+  Help:()=>[{label:'About Windows Media Player\u2026',run:about}]
+};
+async function pasteGo(){
+  try{const t=await navigator.clipboard.readText(); addr.value=t; load(t)}
+  catch(e){addr.focus();setStatus('Clipboard blocked - paste into Address',true)}
+}
+const menubar=$('#menubar');
+function closeMenus(){$$('.dd',menubar).forEach(d=>d.remove());$$('.mi',menubar).forEach(m=>m.classList.remove('open'))}
+Object.keys(MENUS).forEach(name=>{
+  const mi=document.createElement('div'); mi.className='mi'; mi.textContent=name; mi.tabIndex=0; mi.setAttribute('role','button');
+  const open=e=>{
+    e.stopPropagation(); const was=mi.classList.contains('open'); closeMenus(); if(was) return;
+    mi.classList.add('open'); const dd=document.createElement('div'); dd.className='dd';
+    MENUS[name]().forEach(it=>{
+      if(it==='-'){dd.appendChild(document.createElement('hr'));return}
+      const b=document.createElement('button'); b.type='button';
+      const i=document.createElement('i'); i.textContent=it.on?'\u2713':''; b.append(i,document.createTextNode(it.label));
+      b.onclick=ev=>{ev.stopPropagation();closeMenus();it.run()}; dd.appendChild(b);
+    });
+    mi.appendChild(dd);
+  };
+  mi.addEventListener('click',open);
+  mi.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open(e)}});
+  menubar.appendChild(mi);
+});
+document.addEventListener('click',closeMenus);
+
+/* title bar */
+$('#tMin').onclick=()=>win.classList.toggle('min');
+$('#tMax').onclick=fullscreen;
+$('#tClose').onclick=clearAll;
+
+/* keyboard */
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeMenus();closeModal();return}
+  if(/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)&&document.activeElement.type!=='range') return;
+  if(e.metaKey||e.ctrlKey||e.altKey) return;
+  const k=e.key.toLowerCase();
+  if(k===' '&&document.activeElement.tagName!=='BUTTON'){e.preventDefault();togglePlay()}
+  else if(k==='n')next(); else if(k==='p')prev();
+  else if(e.key==='ArrowRight'&&document.activeElement!==seek&&document.activeElement!==vol){cmd('seekTo',[S.cur+5,true])}
+  else if(e.key==='ArrowLeft'&&document.activeElement!==seek&&document.activeElement!==vol){cmd('seekTo',[Math.max(0,S.cur-5),true])}
+  else if(e.key==='ArrowUp'&&document.activeElement!==vol){e.preventDefault();setVol(Math.min(100,S.volume+5),true)}
+  else if(e.key==='ArrowDown'&&document.activeElement!==vol){e.preventDefault();setVol(Math.max(0,S.volume-5),true)}
+});
+if('mediaSession' in navigator){
+  const h=(a,f)=>{try{navigator.mediaSession.setActionHandler(a,f)}catch(e){}};
+  h('play',togglePlay);h('pause',togglePlay);h('previoustrack',prev);h('nexttrack',next);
+}
+
+/* ---------- visuals ---------- */
+let W=0,H=0,dpr=1;
+function resize(){
+  const r=viz.getBoundingClientRect(); dpr=Math.min(window.devicePixelRatio||1,2);
+  W=Math.max(1,r.width);H=Math.max(1,r.height);
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  g.setTransform(dpr,0,0,dpr,0,0); g.fillStyle='#000'; g.fillRect(0,0,W,H);
+}
+new ResizeObserver(resize).observe(viz); resize();
+
+function energy(t){
+  if(!S.playing) return .12+.05*Math.sin(t*.8);
+  const ph=(t*1.85)%1; // ~111 bpm pulse (time-based, not audio-reactive)
+  return .32+.5*Math.pow(1-ph,3)+.18*(.5+.5*Math.sin(t*.6));
+}
+function wedges(N,R,fn){
+  const a=Math.PI*2/N;
+  for(let i=0;i<N;i++){
+    g.save(); g.rotate(i*a); if(i&1) g.scale(1,-1);
+    g.beginPath(); g.moveTo(0,0); g.arc(0,0,R,-a/2-.006,a/2+.006); g.closePath(); g.clip();
+    fn(i); g.restore();
+  }
+}
+function vignette(a){
+  const r=Math.hypot(W,H)/2, gr=g.createRadialGradient(W/2,H/2,r*.3,W/2,H/2,r);
+  gr.addColorStop(0,'rgba(0,0,0,0)'); gr.addColorStop(1,'rgba(0,0,0,'+a+')');
+  g.fillStyle=gr; g.fillRect(0,0,W,H);
+}
+function drawKal(t,e){
+  g.setTransform(dpr,0,0,dpr,0,0); g.globalCompositeOperation='source-over'; g.globalAlpha=1;
+  g.fillStyle='#000'; g.fillRect(0,0,W,H);
+  const R=Math.hypot(W,H)/2+4, Sz=R*(1.05+.12*e);
+  g.save(); g.translate(W/2,H/2); g.rotate(t*.06);
+  wedges(12,R,()=>{
+    g.save(); g.translate(R*.42,0); g.rotate(t*.32); g.drawImage(src,-Sz/2,-Sz/2,Sz,Sz); g.restore();
+    g.save(); g.globalCompositeOperation='screen'; g.globalAlpha=.5; g.translate(R*.2,0); g.rotate(-t*.47+1); g.scale(.7,.7); g.drawImage(src,-Sz/2,-Sz/2,Sz,Sz); g.restore();
+  });
+  g.restore();
+  const gr=g.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.min(W,H)*.6);
+  gr.addColorStop(0,'rgba(255,255,255,'+(.05+.16*e)+')'); gr.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle=gr; g.fillRect(0,0,W,H);
+  vignette(.55);
+}
+function drawKalColors(t,e){
+  g.setTransform(dpr,0,0,dpr,0,0); g.globalCompositeOperation='source-over'; g.globalAlpha=1;
+  g.fillStyle='rgba(0,0,12,.16)'; g.fillRect(0,0,W,H);
+  const R=Math.hypot(W,H)/2+4;
+  g.save(); g.translate(W/2,H/2); g.rotate(t*.05);
+  wedges(10,R,()=>{
+    g.globalCompositeOperation='lighter';
+    for(let k=0;k<6;k++){
+      const hue=(t*24+k*58+S.hue)%360;
+      const x=R*(.45+.32*Math.sin(t*.8+k*1.9)), y=R*.16*Math.sin(t*1.1+k*2.3);
+      const r=(10+26*(.5+.5*Math.sin(t*1.3+k*1.1)))*(.7+e*.9);
+      const gr=g.createRadialGradient(x,y,0,x,y,r);
+      gr.addColorStop(0,'hsla('+hue+',100%,62%,.9)'); gr.addColorStop(1,'hsla('+hue+',100%,50%,0)');
+      g.fillStyle=gr; g.beginPath(); g.arc(x,y,r,0,7); g.fill();
+      g.strokeStyle='hsla('+hue+',100%,70%,.32)'; g.lineWidth=1.5; g.beginPath(); g.moveTo(x,y);
+      g.lineTo(R*.45+R*.3*Math.cos(t+k),R*.2*Math.sin(t*1.4+k)); g.stroke();
+    }
+  });
+  g.restore(); vignette(.4);
+}
+function drawArtMode(t,e){
+  g.setTransform(dpr,0,0,dpr,0,0); g.globalCompositeOperation='source-over'; g.globalAlpha=1;
+  g.fillStyle='#000'; g.fillRect(0,0,W,H);
+  const bs=Math.max(W,H)*(1.35+.05*Math.sin(t*.3));
+  g.globalAlpha=.3; g.drawImage(src,W/2-bs/2,H/2-bs/2,bs,bs); g.globalAlpha=1;
+  const s=Math.min(W,H)*.6*(1+.012*e), x=W/2-s/2, y=H*.46-s/2;
+  g.shadowColor='rgba(0,0,0,.85)'; g.shadowBlur=26; g.drawImage(src,x,y,s,s); g.shadowBlur=0; g.shadowColor='transparent';
+  g.save(); g.translate(0,y+2*s+3); g.scale(1,-1); g.globalAlpha=.28; g.drawImage(src,x,0,s,s); g.restore();
+  const gr=g.createLinearGradient(0,y+s,0,y+s*1.6); gr.addColorStop(0,'rgba(0,0,0,.2)'); gr.addColorStop(1,'rgba(0,0,0,1)');
+  g.fillStyle=gr; g.fillRect(0,y+s+2,W,H);
+  vignette(.45);
+}
+
+let last=performance.now(),tt=0,lastTm='';
+function loop(now){
+  const dt=Math.min(.05,(now-last)/1000); last=now; tt+=dt*(S.playing?1:.3);
+  let cur=S.cur; if(S.playing&&S.curAt) cur+=(now-S.curAt)/1000; if(S.dur) cur=Math.min(cur,S.dur);
+  if(!dragging){
+    const v=S.dur?Math.round(cur/S.dur*1000):0;
+    if(+seek.value!==v){seek.value=v;seek.style.setProperty('--p',v/10+'%')}
+  }
+  const shown=dragging&&S.dur?seek.value/1000*S.dur:cur;
+  const txt=S.loaded?fmt(shown)+(S.dur?' / '+fmt(S.dur):''):'00:00';
+  if(txt!==lastTm){tm.textContent=txt;lastTm=txt}
+  const e=energy(tt);
+  if(S.mode==='kal') drawKal(tt,e); else if(S.mode==='kal2') drawKalColors(tt,e); else if(S.mode==='art') drawArtMode(tt,e);
+  requestAnimationFrame(loop);
+}
+
+/* ---------- init ---------- */
+paintFallback('wmp');
+win.dataset.skin=S.skin; win.dataset.mode=S.mode;
+setVol(S.volume,false);
+showPane('now'); doRender(); showNP(); updateUI();
+requestAnimationFrame(loop);
+try{
+  const q=new URLSearchParams(location.search).get('u');
+  if(q){addr.value=q;load(q)}
+}catch(e){}
+})();
+</script>
+</body>
+</html>
